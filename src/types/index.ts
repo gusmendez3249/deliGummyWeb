@@ -15,6 +15,7 @@ export interface User {
   ultimo_acceso: string | null;
   imagen_url: string | null;
   role: Role;
+  vendedor?: Vendedor;
 }
 
 export interface Categoria {

@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AlertProvider } from './contexts/AlertContext';
@@ -16,7 +17,7 @@ import UsuariosPage from './pages/usuarios/UsuariosPage';
 import VendedorDashboardPage from './pages/vendedor/VendedorDashboardPage';
 import VentasDirectasPage from './pages/ventas/VentasDirectasPage';
 
-function PrivateRoute({ children, roles }: { children: JSX.Element; roles?: string[] }) {
+function PrivateRoute({ children, roles }: { children: ReactNode; roles?: string[] }) {
   const { user, token, isLoading, hasRole } = useAuth();
   const location = useLocation();
 
