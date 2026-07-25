@@ -9,11 +9,11 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'https://deligumy-api.onrender.com/',
         changeOrigin: true,
       },
       '/sanctum': {
-        target: 'http://localhost:8000',
+        target: 'https://deligumy-api.onrender.com/',
         changeOrigin: true,
       },
     },
