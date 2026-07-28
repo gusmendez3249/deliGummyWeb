@@ -169,14 +169,26 @@ export default function InventarioPage() {
                 <input
                   type="date"
                   value={fechaInicio}
-                  onChange={e => { setFechaInicio(e.target.value); loadProductos(e.target.value, fechaFin); }}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setFechaInicio(val);
+                    const end = val > fechaFin ? val : fechaFin;
+                    if (val > fechaFin) setFechaFin(val);
+                    loadProductos(val, end);
+                  }}
                   className="w-full sm:w-auto px-2 py-1.5 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <span>al</span>
                 <input
                   type="date"
                   value={fechaFin}
-                  onChange={e => { setFechaFin(e.target.value); loadProductos(fechaInicio, e.target.value); }}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setFechaFin(val);
+                    const start = val < fechaInicio ? val : fechaInicio;
+                    if (val < fechaInicio) setFechaInicio(val);
+                    loadProductos(start, val);
+                  }}
                   className="w-full sm:w-auto px-2 py-1.5 border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -232,12 +244,13 @@ export default function InventarioPage() {
                     const vendido = (Number(p.total_vendido) || 0) + (Number(p.total_vendido_pos) || 0);
                     const cantidad = stock + vendido;
                     const precio = Number(p.precio_venta) || 0;
-                    const subtotal = vendido * precio;
+                    // Subtotal real usando los históricos del backend
+                    const subtotal = (Number(p.total_venta_carga) || 0) + (Number(p.total_venta_pos) || 0);
                     const pagoVendedor = Number(p.total_comision) || 0;
                     const precioReal = Number(p.costo) || 0;
                     const sobrante = stock;
-                    // Inversion = Costo Real * Vendidos
-                    const inversion = vendido * precioReal;
+                    // Inversión real usando los históricos del backend
+                    const inversion = (Number(p.total_costo_carga) || 0) + (Number(p.total_costo_pos) || 0);
                     // Ganancia = subtotal - inversion - pago vendedor
                     const ganancia = subtotal - inversion - pagoVendedor;
 
@@ -275,8 +288,8 @@ export default function InventarioPage() {
                     <td className="px-3 py-2 text-right text-slate-400">—</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-slate-900">
                       {formatCurrency(filteredProductos.reduce((acc, p: any) => {
-                        const v = (Number(p.total_vendido) || 0) + (Number(p.total_vendido_pos) || 0);
-                        return acc + (v * (Number(p.precio_venta) || 0));
+                        const sub = (Number(p.total_venta_carga) || 0) + (Number(p.total_venta_pos) || 0);
+                        return acc + sub;
                       }, 0))}
                     </td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-slate-900">
@@ -288,15 +301,14 @@ export default function InventarioPage() {
                     </td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-slate-900 bg-amber-100/30">
                       {formatCurrency(filteredProductos.reduce((acc, p: any) => {
-                        const v = (Number(p.total_vendido) || 0) + (Number(p.total_vendido_pos) || 0);
-                        return acc + (v * (Number(p.costo) || 0));
+                        const inv = (Number(p.total_costo_carga) || 0) + (Number(p.total_costo_pos) || 0);
+                        return acc + inv;
                       }, 0))}
                     </td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-slate-900">
                       {formatCurrency(filteredProductos.reduce((acc, p: any) => {
-                        const v = (Number(p.total_vendido) || 0) + (Number(p.total_vendido_pos) || 0);
-                        const sub = v * (Number(p.precio_venta) || 0);
-                        const inv = v * (Number(p.costo) || 0);
+                        const sub = (Number(p.total_venta_carga) || 0) + (Number(p.total_venta_pos) || 0);
+                        const inv = (Number(p.total_costo_carga) || 0) + (Number(p.total_costo_pos) || 0);
                         const com = Number(p.total_comision) || 0;
                         return acc + (sub - inv - com);
                       }, 0))}

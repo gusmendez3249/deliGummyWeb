@@ -43,6 +43,15 @@ export default function VentasDirectasPage() {
   const [selectedVenta, setSelectedVenta] = useState<VentaDirecta | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Product Search & Category Filters in POS
+  const [buscarProducto, setBuscarProducto] = useState('');
+  const [categoriaFilter, setCategoriaFilter] = useState('');
+  const [categorias, setCategorias] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get('/categorias', { params: { per_page: 1000 } }).then(r => setCategorias(r.data.data || r.data));
+  }, []);
+
   const loadProductos = useCallback(async () => {
     setLoading(true);
     try {
@@ -166,6 +175,14 @@ export default function VentasDirectasPage() {
     }
   };
 
+  const filteredProducts = productos.filter(p => {
+    const matchesSearch = p.nombre.toLowerCase().includes(buscarProducto.toLowerCase()) || 
+                          (p.codigo && p.codigo.toLowerCase().includes(buscarProducto.toLowerCase())) ||
+                          (p.marca && p.marca.toLowerCase().includes(buscarProducto.toLowerCase()));
+    const matchesCategory = categoriaFilter === '' || String(p.categoria_id) === categoriaFilter;
+    return matchesSearch && matchesCategory;
+  });
+
   const cartTotal = cart.reduce((sum, item) => sum + (item.producto.precio_venta * item.cantidad), 0);
 
   return (
@@ -197,16 +214,51 @@ export default function VentasDirectasPage() {
           {/* Productos column */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white rounded-lg border border-border p-4 shadow-sm">
-              <h2 className="text-sm font-semibold text-text-primary mb-3">Dulces Disponibles</h2>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+                <h2 className="text-sm font-semibold text-text-primary">Dulces Disponibles</h2>
+                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                  <div className="relative flex-1 sm:w-64">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-text-muted" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre o código..."
+                      value={buscarProducto}
+                      onChange={e => setBuscarProducto(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary bg-white"
+                    />
+                  </div>
+                  <select
+                    value={categoriaFilter}
+                    onChange={e => setCategoriaFilter(e.target.value)}
+                    className="px-3 py-1.5 text-xs border border-border rounded-md focus:outline-none focus:ring-1 focus:ring-primary bg-white"
+                  >
+                    <option value="">Todas las categorías</option>
+                    {categorias.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                  {(buscarProducto || categoriaFilter) && (
+                    <button
+                      onClick={() => {
+                        setBuscarProducto('');
+                        setCategoriaFilter('');
+                      }}
+                      className="text-xs text-danger font-semibold hover:underline px-1"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+              </div>
               {loading ? (
                 <div className="h-32 flex items-center justify-center">
                   <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 </div>
-              ) : productos.length === 0 ? (
-                <p className="text-sm text-text-muted">No hay productos en inventario.</p>
+              ) : filteredProducts.length === 0 ? (
+                <p className="text-sm text-text-muted">No se encontraron productos.</p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {productos.map(p => (
+                  {filteredProducts.map(p => (
                     <button
                       key={p.id}
                       onClick={() => addToCart(p)}

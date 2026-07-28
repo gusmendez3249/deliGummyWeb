@@ -55,9 +55,13 @@ export function tipoMovimientoColor(tipo: string): string {
 }
 
 export function estadoCargaColor(estado: string): string {
-  return estado === 'abierta'
-    ? 'bg-amber-100 text-amber-800'
-    : 'bg-green-100 text-green-800';
+  if (estado === 'abierta') {
+    return 'bg-amber-100 text-amber-800';
+  }
+  if (estado === 'cancelada') {
+    return 'bg-red-100 text-red-800';
+  }
+  return 'bg-green-100 text-green-800';
 }
 
 export function estadoLiquidacionColor(estado: string): string {

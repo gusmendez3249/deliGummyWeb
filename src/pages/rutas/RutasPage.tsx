@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Eye, CheckCircle, Package } from 'lucide-react';
+import { Plus, Eye, CheckCircle, Package, XCircle, AlertTriangle } from 'lucide-react';
 import api from '../../api/axios';
 import type { CargaVendedor, Producto, User } from '../../types';
 import Modal from '../../components/ui/Modal';
@@ -18,6 +18,8 @@ export default function RutasPage() {
   const [detailModal, setDetailModal] = useState(false);
   const [selectedCarga, setSelectedCarga] = useState<CargaVendedor | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [cancelModal, setCancelModal] = useState(false);
+  const [cargaToCancel, setCargaToCancel] = useState<number | null>(null);
 
   // Filters & Page Size States
   const [vendedorFilter, setVendedorFilter] = useState('');
@@ -142,6 +144,11 @@ export default function RutasPage() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const openCancelar = (id: number) => {
+    setCargaToCancel(id);
+    setCancelModal(true);
   };
 
   return (
@@ -274,18 +281,27 @@ export default function RutasPage() {
                   <td className="px-4 py-3 text-center tabular-nums">{c.detalles?.length || 0}</td>
                   <td className="px-4 py-3 text-center">
                     <span className={`px-2 py-0.5 text-xs font-medium rounded ${estadoCargaColor(c.estado)}`}>
-                      {c.estado === 'abierta' ? 'Abierta' : 'Cerrada'}
+                    {c.estado === 'abierta' ? 'Abierta' : c.estado === 'cerrada' ? 'Cerrada' : 'Cancelada'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right flex justify-end gap-1.5">
                     {c.estado === 'abierta' && (
-                      <button
-                        onClick={() => openCerrar(c)}
-                        className="p-1.5 text-text-muted hover:text-success rounded transition-colors"
-                        title="Cerrar carga"
-                      >
-                        <CheckCircle size={15} />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => openCerrar(c)}
+                          className="p-1.5 text-text-muted hover:text-success rounded transition-colors"
+                          title="Cerrar carga"
+                        >
+                          <CheckCircle size={15} />
+                        </button>
+                        <button
+                          onClick={() => openCancelar(c.id)}
+                          className="p-1.5 text-text-muted hover:text-danger rounded transition-colors"
+                          title="Cancelar carga"
+                        >
+                          <XCircle size={15} />
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={async () => {
@@ -545,7 +561,7 @@ export default function RutasPage() {
             <div>
               <span className="block text-xs text-text-muted">Estado</span>
               <span className={`inline-block px-2 py-0.5 text-xs font-semibold rounded ${selectedCarga ? estadoCargaColor(selectedCarga.estado) : ''}`}>
-                {selectedCarga?.estado === 'abierta' ? 'Abierta' : 'Cerrada'}
+                {selectedCarga?.estado === 'abierta' ? 'Abierta' : selectedCarga?.estado === 'cerrada' ? 'Cerrada' : 'Cancelada'}
               </span>
             </div>
           </div>
@@ -593,6 +609,48 @@ export default function RutasPage() {
               className="px-4 py-2 text-sm border border-border rounded-md hover:bg-surface"
             >
               Cerrar
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Cancel Confirmation Modal */}
+      <Modal isOpen={cancelModal} onClose={() => setCancelModal(false)} title="Confirmar cancelación" size="sm">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-red-50 text-red-600 rounded-full flex-shrink-0">
+              <AlertTriangle size={20} />
+            </div>
+            <p className="text-sm text-text-secondary pt-1 leading-relaxed">
+              ¿Está seguro de que desea cancelar la carga <strong>#{cargaToCancel}</strong>? Los productos salientes serán devueltos al stock actual inmediatamente.
+            </p>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={() => setCancelModal(false)}
+              className="px-4 py-2 text-xs font-semibold border border-border rounded hover:bg-surface"
+            >
+              No, mantener
+            </button>
+            <button
+              onClick={async () => {
+                if (!cargaToCancel) return;
+                setSubmitting(true);
+                try {
+                  await api.post(`/cargas/${cargaToCancel}/cancelar`);
+                  setCancelModal(false);
+                  load();
+                } catch (err: unknown) {
+                  const ax = err as { response?: { data?: { message?: string } } };
+                  alert(ax.response?.data?.message || 'Error al cancelar carga');
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+              disabled={submitting}
+              className="px-4 py-2 text-xs font-semibold bg-danger text-white rounded hover:bg-red-700 disabled:opacity-60 transition-colors"
+            >
+              {submitting ? 'Cancelando...' : 'Sí, cancelar carga'}
             </button>
           </div>
         </div>
