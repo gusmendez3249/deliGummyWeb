@@ -25,7 +25,7 @@ function SafeImage({ src, fallbackIcon }: { src: string | null; fallbackIcon: Re
 export default function VentasDirectasPage() {
   const [activeTab, setActiveTab] = useState<'nueva' | 'historial'>('nueva');
   const [productos, setProductos] = useState<Producto[]>([]);
-  const [cart, setCart] = useState<{ producto: Producto; cantidad: number }[]>([]);
+  const [cart, setCart] = useState<{ producto: Producto; cantidad: number; precio_venta: number }[]>([]);
   const [nota, setNota] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -119,8 +119,13 @@ export default function VentasDirectasPage() {
       }
       setCart(cart.map(item => item.producto.id === prod.id ? { ...item, cantidad: item.cantidad + 1 } : item));
     } else {
-      setCart([...cart, { producto: prod, cantidad: 1 }]);
+      setCart([...cart, { producto: prod, cantidad: 1, precio_venta: prod.precio_venta }]);
     }
+  };
+
+  const updateCartPrice = (prodId: number, val: number) => {
+    if (val < 0) return;
+    setCart(cart.map(item => item.producto.id === prodId ? { ...item, precio_venta: val } : item));
   };
 
   const updateCartQty = (prodId: number, val: number, maxStock: number) => {
@@ -138,17 +143,21 @@ export default function VentasDirectasPage() {
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (cart.length === 0) {
-      alert('El carrito está vacío.');
+    // Validate that custom prices are not less than production cost
+    const invalidPriceItem = cart.find(item => Number(item.precio_venta) < Number(item.producto.costo));
+    if (invalidPriceItem) {
+      alert(`El precio ingresado para "${invalidPriceItem.producto.nombre}" no es válido.`);
       return;
     }
+
     setSubmitting(true);
     try {
       const payload = {
         nota,
         detalles: cart.map(item => ({
           producto_id: item.producto.id,
-          cantidad: item.cantidad
+          cantidad: item.cantidad,
+          precio_venta: item.precio_venta
         }))
       };
       await api.post('/ventas-directas', payload);
@@ -183,7 +192,7 @@ export default function VentasDirectasPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.producto.precio_venta * item.cantidad), 0);
+  const cartTotal = cart.reduce((sum, item) => sum + (item.precio_venta * item.cantidad), 0);
 
   return (
     <div className="space-y-4">
@@ -305,7 +314,36 @@ export default function VentasDirectasPage() {
                     <div key={item.producto.id} className="flex justify-between items-center border-b border-border pb-2 gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-text-primary truncate">{item.producto.nombre}</p>
-                        <p className="text-xs text-text-secondary">{formatCurrency(item.producto.precio_venta)} c/u</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="text-[10px] text-text-muted">P. Unit: $</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.precio_venta}
+                            onChange={e => updateCartPrice(item.producto.id, parseFloat(e.target.value) || 0)}
+                            className={`w-16 px-1.5 py-0.5 text-xs border rounded bg-white font-semibold focus:outline-none focus:ring-1 ${
+                              Number(item.precio_venta) < Number(item.producto.costo)
+                                ? 'border-danger text-danger focus:ring-danger'
+                                : 'border-border text-text-primary focus:ring-primary'
+                            }`}
+                          />
+                          {item.precio_venta !== item.producto.precio_venta && (
+                            <button
+                              type="button"
+                              onClick={() => updateCartPrice(item.producto.id, item.producto.precio_venta)}
+                              className="text-[9px] text-primary hover:underline font-semibold"
+                              title="Restablecer precio original"
+                            >
+                              Restablecer
+                            </button>
+                          )}
+                        </div>
+                        {Number(item.precio_venta) < Number(item.producto.costo) && (
+                          <span className="text-[9px] text-danger font-semibold block mt-0.5">
+                            Precio no válido
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <input

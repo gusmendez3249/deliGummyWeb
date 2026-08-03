@@ -26,6 +26,56 @@ function SafeImage({ src, fallbackIcon }: { src: string | null; fallbackIcon: Re
   );
 }
 
+function StockAdder({ product, onAdded }: { product: Producto; onAdded: () => void }) {
+  const [qty, setQty] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const num = parseInt(qty);
+    if (isNaN(num) || num <= 0) return;
+    setSubmitting(true);
+    try {
+      await api.post('/movimientos', {
+        producto_id: product.id,
+        tipo_movimiento: 'alta',
+        cantidad: num,
+        observaciones: 'Entrada rápida de stock desde catálogo'
+      });
+      setQty('');
+      alert(`Se agregaron ${num} unidades a "${product.nombre}" con éxito.`);
+      onAdded();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error al agregar stock.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex items-center gap-1 justify-center">
+      <input
+        type="number"
+        min="1"
+        value={qty}
+        onChange={e => setQty(e.target.value)}
+        onKeyDown={handleIntegerKeyDown}
+        placeholder="+ Cant"
+        className="w-16 px-2 py-1 text-xs border border-border rounded text-center focus:outline-none focus:ring-1 focus:ring-primary"
+        disabled={submitting}
+      />
+      <button
+        type="submit"
+        disabled={submitting || !qty}
+        className="px-2.5 py-1 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded disabled:opacity-50 transition-colors"
+      >
+        {submitting ? '...' : 'Sumar'}
+      </button>
+    </form>
+  );
+}
+
 export default function ProductosPage() {
   const { user } = useAuth();
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -209,6 +259,12 @@ export default function ProductosPage() {
         </div>
       ),
     },
+    ...(showActions ? [{
+      key: 'agregar_inventario', header: 'Agregar Inventario', className: 'w-32 text-center',
+      render: (p: Producto) => (
+        <StockAdder product={p} onAdded={() => loadProductos(pagination.currentPage)} />
+      )
+    }] : [])
   ];
 
   return (

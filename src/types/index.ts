@@ -96,6 +96,11 @@ export interface CargaVendedor {
   observaciones: string | null;
   usuario: User;
   detalles: DetalleCargaVendedor[];
+  gasolina?: number;
+  merma?: number;
+  efectivo_entregado?: number;
+  efectivo_real?: number;
+  deuda?: number;
 }
 
 export interface LiquidacionVendedor {
@@ -107,6 +112,7 @@ export interface LiquidacionVendedor {
   total_comision: number;
   salario_pagado: number;
   total_pagado: number;
+  deuda?: number;
   estado: 'pendiente' | 'pagado';
   vendedor: Vendedor;
 }

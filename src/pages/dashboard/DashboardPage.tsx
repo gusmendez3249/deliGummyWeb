@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Package, AlertTriangle, DollarSign, TrendingUp, Users, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { Package, AlertTriangle, DollarSign, TrendingUp, Users, ChevronLeft, ChevronRight, RefreshCw, Layers } from 'lucide-react';
 import StatsCard from '../../components/ui/StatsCard';
+import Modal from '../../components/ui/Modal';
 import api from '../../api/axios';
 import { formatCurrency, formatNumber, tipoMovimientoLabel, tipoMovimientoColor, formatDateTime } from '../../utils/formatters';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -16,7 +17,17 @@ interface DashboardStatsExtended {
   productos_stock_bajo: number;
   productos_stock_bajo_lista: any[];
   ventas_rango: number;
+  carga_ventas_total: number;
+  pos_ventas_total: number;
+  inversion_rango: number;
+  carga_inversion_total: number;
+  pos_inversion_total: number;
   ganancia_rango: number;
+  carga_comisiones_total: number;
+  gasolina_rango: number;
+  merma_rango: number;
+  deuda_rango: number;
+  utilidad_real: number;
   total_devoluciones: number;
   vendedores_activos: number;
   ultimos_movimientos: any[];
@@ -29,6 +40,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'dia' | 'semana' | 'mes' | 'ano'>('semana');
   const [offset, setOffset] = useState(0);
+  const [breakdownModal, setBreakdownModal] = useState<{
+    title: string;
+    description: string;
+    details: { label: string; value: string | number; isBold?: boolean; isNegative?: boolean }[];
+  } | null>(null);
 
   // Helper to get local date string YYYY-MM-DD to avoid UTC shift
   const toLocalDateString = (d: Date) => {
@@ -113,6 +129,86 @@ export default function DashboardPage() {
   const handlePrev = () => setOffset(prev => prev - 1);
   const handleNext = () => setOffset(prev => prev + 1);
   const handleReset = () => setOffset(0);
+
+  const handleShowBreakdown = (type: string) => {
+    if (!stats) return;
+    let title = '';
+    let description = '';
+    let details: { label: string; value: string | number; isBold?: boolean; isNegative?: boolean }[] = [];
+
+    switch (type) {
+      case 'ventas':
+        title = 'Desglose de Ventas';
+        description = 'Total de ingresos generados por ventas registradas en el periodo.';
+        details = [
+          { label: 'Ventas en Rutas (Cargas)', value: formatCurrency(stats.carga_ventas_total) },
+          { label: 'Ventas Directas (POS)', value: formatCurrency(stats.pos_ventas_total) },
+          { label: 'Total Ventas del Periodo', value: formatCurrency(stats.ventas_rango), isBold: true }
+        ];
+        break;
+      case 'inversion':
+        title = 'Desglose de Inversión en Mercancía';
+        description = 'Costo total de producción o adquisición de la mercancía que fue vendida.';
+        details = [
+          { label: 'Costo de Mercancía en Rutas', value: formatCurrency(stats.carga_inversion_total) },
+          { label: 'Costo de Mercancía en POS (Directa)', value: formatCurrency(stats.pos_inversion_total) },
+          { label: 'Total Inversión de lo Vendido', value: formatCurrency(stats.inversion_rango), isBold: true }
+        ];
+        break;
+      case 'ganancia_neta':
+        title = 'Desglose de Ganancia Neta';
+        description = 'Ganancia de ventas menos los costos de mercancía y comisiones a vendedores.';
+        details = [
+          { label: 'Ingresos por Ventas', value: formatCurrency(stats.ventas_rango) },
+          { label: 'Inversión en Mercancía', value: `-${formatCurrency(stats.inversion_rango)}`, isNegative: true },
+          { label: 'Comisiones de Vendedores', value: `-${formatCurrency(stats.carga_comisiones_total)}`, isNegative: true },
+          { label: 'Ganancia Neta del Periodo', value: formatCurrency(stats.ganancia_rango), isBold: true }
+        ];
+        break;
+      case 'utilidades':
+        title = 'Desglose de Utilidades (Ganancia Real)';
+        description = 'Utilidad final real del negocio tras descontar gastos operativos de rutas.';
+        details = [
+          { label: 'Ganancia Neta del Periodo', value: formatCurrency(stats.ganancia_rango) },
+          { label: 'Gasto de Gasolina en Rutas', value: `-${formatCurrency(stats.gasolina_rango)}`, isNegative: true },
+          { label: 'Costo de Mermas en Rutas', value: `-${formatCurrency(stats.merma_rango)}`, isNegative: true },
+          { label: 'Faltantes / Deudas de Vendedores', value: `-${formatCurrency(stats.deuda_rango)}`, isNegative: true },
+          { label: 'Utilidad Real Final', value: formatCurrency(stats.utilidad_real), isBold: true }
+        ];
+        break;
+      case 'valor_inventario':
+        title = 'Desglose de Valor de Inventario';
+        description = 'Valorización total a precio de costo de las existencias actuales.';
+        details = [
+          { label: 'Total de Piezas en Stock', value: `${formatNumber(stats.stock_total)} unidades` },
+          { label: 'Valorización del Inventario (Costo)', value: formatCurrency(stats.valor_inventario), isBold: true }
+        ];
+        break;
+      case 'stock_total':
+        title = 'Desglose de Stock Total';
+        description = 'Cantidad total de piezas en existencia en almacén general.';
+        details = [
+          { label: 'Unidades en Stock', value: `${formatNumber(stats.stock_total)} unidades`, isBold: true }
+        ];
+        break;
+      case 'devoluciones':
+        title = 'Desglose de Devoluciones';
+        description = 'Piezas de productos que retornaron al stock al cierre de rutas.';
+        details = [
+          { label: 'Productos Devueltos', value: `${formatNumber(stats.total_devoluciones)} unidades`, isBold: true }
+        ];
+        break;
+      case 'stock_bajo':
+        title = 'Desglose de Alertas de Stock Bajo';
+        description = 'Productos que se encuentran por debajo del nivel mínimo establecido.';
+        details = [
+          { label: 'Productos en Alerta', value: `${stats.productos_stock_bajo} productos`, isBold: true }
+        ];
+        break;
+    }
+
+    setBreakdownModal({ title, description, details });
+  };
 
   if (loading && !stats) {
     return (
@@ -200,42 +296,111 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-        <StatsCard
-          title="Ventas del periodo"
-          value={formatCurrency(stats.ventas_rango)}
-          icon={<DollarSign size={20} />}
-          variant="success"
-        />
-        <StatsCard
-          title="Ganancia neta"
-          value={formatCurrency(stats.ganancia_rango)}
-          icon={<TrendingUp size={20} />}
-          variant="success"
-        />
-        <StatsCard
-          title="Valor de Inventario"
-          value={formatCurrency(stats.valor_inventario)}
-          icon={<Package size={20} />}
-        />
-        <StatsCard
-          title="Stock total"
-          value={formatNumber(stats.stock_total)}
-          icon={<Package size={20} />}
-        />
-        <StatsCard
-          title="Devoluciones"
-          value={formatNumber(stats.total_devoluciones)}
-          icon={<AlertTriangle size={20} />}
-          variant="danger"
-        />
-        <StatsCard
-          title="Stock bajo"
-          value={stats.productos_stock_bajo}
-          icon={<AlertTriangle size={20} />}
-          variant={stats.productos_stock_bajo > 0 ? 'danger' : 'default'}
-        />
+      {/* KPI Cards: Financial Row */}
+      <div className="space-y-2">
+        <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Resumen Financiero</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div 
+            onClick={() => handleShowBreakdown('ventas')}
+            className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+          >
+            <StatsCard
+              title="Ventas del periodo"
+              value={formatCurrency(stats.ventas_rango)}
+              icon={<DollarSign size={20} />}
+              variant="success"
+              trend="Hacer clic para ver desglose"
+            />
+          </div>
+          <div 
+            onClick={() => handleShowBreakdown('inversion')}
+            className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+          >
+            <StatsCard
+              title="Adquisición de Mercancía"
+              value={formatCurrency(stats.inversion_rango)}
+              icon={<Layers size={20} />}
+              trend="Hacer clic para ver desglose"
+            />
+          </div>
+          <div 
+            onClick={() => handleShowBreakdown('ganancia_neta')}
+            className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+          >
+            <StatsCard
+              title="Ganancia neta"
+              value={formatCurrency(stats.ganancia_rango)}
+              icon={<TrendingUp size={20} />}
+              variant="success"
+              trend="Hacer clic para ver desglose"
+            />
+          </div>
+          <div 
+            onClick={() => handleShowBreakdown('utilidades')}
+            className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+          >
+            <StatsCard
+              title="Utilidades (Ganancia Real)"
+              value={formatCurrency(stats.utilidad_real)}
+              icon={<TrendingUp size={20} />}
+              variant="success"
+              trend="Hacer clic para ver desglose"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards: Inventory Row */}
+      <div className="space-y-2">
+        <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Estado del Inventario</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div 
+            onClick={() => handleShowBreakdown('valor_inventario')}
+            className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+          >
+            <StatsCard
+              title="Valor de Inventario"
+              value={formatCurrency(stats.valor_inventario)}
+              icon={<Package size={20} />}
+              trend="Hacer clic para ver desglose"
+            />
+          </div>
+          <div 
+            onClick={() => handleShowBreakdown('stock_total')}
+            className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+          >
+            <StatsCard
+              title="Stock total"
+              value={formatNumber(stats.stock_total)}
+              icon={<Package size={20} />}
+              trend="Hacer clic para ver desglose"
+            />
+          </div>
+          <div 
+            onClick={() => handleShowBreakdown('devoluciones')}
+            className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+          >
+            <StatsCard
+              title="Devoluciones"
+              value={formatNumber(stats.total_devoluciones)}
+              icon={<AlertTriangle size={20} />}
+              variant="danger"
+              trend="Hacer clic para ver desglose"
+            />
+          </div>
+          <div 
+            onClick={() => handleShowBreakdown('stock_bajo')}
+            className="cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
+          >
+            <StatsCard
+              title="Stock bajo"
+              value={stats.productos_stock_bajo}
+              icon={<AlertTriangle size={20} />}
+              variant={stats.productos_stock_bajo > 0 ? 'danger' : 'default'}
+              trend="Hacer clic para ver desglose"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Charts Row */}
@@ -342,6 +507,38 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Breakdown Modal */}
+      <Modal isOpen={!!breakdownModal} onClose={() => setBreakdownModal(null)} title={breakdownModal?.title || ''} size="sm">
+        <div className="space-y-4">
+          <p className="text-xs text-text-secondary leading-relaxed bg-surface p-2.5 rounded border border-border">
+            {breakdownModal?.description}
+          </p>
+          <div className="divide-y divide-border border border-border rounded-lg overflow-hidden">
+            {breakdownModal?.details.map((item, idx) => (
+              <div 
+                key={idx} 
+                className={`flex justify-between items-center px-4 py-3 text-xs ${
+                  item.isBold ? 'bg-surface font-bold text-text-primary' : 'text-text-secondary'
+                }`}
+              >
+                <span>{item.label}</span>
+                <span className={`font-mono ${item.isNegative ? 'text-danger' : item.isBold ? 'text-primary' : ''}`}>
+                  {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end pt-2">
+            <button
+              onClick={() => setBreakdownModal(null)}
+              className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded hover:bg-primary-hover transition-colors shadow-sm"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

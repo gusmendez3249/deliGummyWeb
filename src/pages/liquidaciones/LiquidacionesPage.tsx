@@ -3,8 +3,21 @@ import { Plus, Check, Search, Filter, AlertTriangle, Settings, Zap } from 'lucid
 import api from '../../api/axios';
 import type { LiquidacionVendedor, Vendedor } from '../../types';
 import Modal from '../../components/ui/Modal';
-import { formatDate, formatCurrency, estadoLiquidacionColor } from '../../utils/formatters';
+import { formatDate, formatCurrency, estadoLiquidacionColor, toLocalDateString } from '../../utils/formatters';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
+
+const getWeekRange = () => {
+  const today = new Date();
+  const day = today.getDay();
+  const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+  const start = new Date(today.setDate(diff));
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return {
+    start: toLocalDateString(start),
+    end: toLocalDateString(end),
+  };
+};
 
 export default function LiquidacionesPage() {
   const [liquidaciones, setLiquidaciones] = useState<LiquidacionVendedor[]>([]);
@@ -27,14 +40,25 @@ export default function LiquidacionesPage() {
   // Filters & Page Size States
   const [vendedorFilter, setVendedorFilter] = useState('');
   const [estadoFilter, setEstadoFilter] = useState('');
+  const [fechaInicioFilter, setFechaInicioFilter] = useState(getWeekRange().start);
+  const [fechaFinFilter, setFechaFinFilter] = useState(getWeekRange().end);
   const [perPage, setPerPage] = useState(25);
 
-  const load = useCallback(async (page = 1, limit = perPage, vendId = vendedorFilter, est = estadoFilter) => {
+  const load = useCallback(async (
+    page = 1,
+    limit = perPage,
+    vendId = vendedorFilter,
+    est = estadoFilter,
+    fInicio = fechaInicioFilter,
+    fFin = fechaFinFilter
+  ) => {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page, per_page: limit };
       if (vendId) params.vendedor_id = vendId;
       if (est) params.estado = est;
+      if (fInicio) params.fecha_inicio = fInicio;
+      if (fFin) params.fecha_fin = fFin;
       const r = await api.get('/liquidaciones', { params });
       setLiquidaciones(r.data.data);
       setPagination({ currentPage: r.data.current_page, lastPage: r.data.last_page, total: r.data.total });
@@ -43,7 +67,7 @@ export default function LiquidacionesPage() {
     } finally {
       setLoading(false);
     }
-  }, [perPage, vendedorFilter, estadoFilter]);
+  }, [perPage, vendedorFilter, estadoFilter, fechaInicioFilter, fechaFinFilter]);
 
   const loadSettings = async () => {
     try {
@@ -180,7 +204,7 @@ export default function LiquidacionesPage() {
               value={vendedorFilter}
               onChange={e => {
                 setVendedorFilter(e.target.value);
-                load(1, perPage, e.target.value, estadoFilter);
+                load(1, perPage, e.target.value, estadoFilter, fechaInicioFilter, fechaFinFilter);
               }}
               className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm border border-border rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-primary sm:min-w-[160px]"
             >
@@ -197,7 +221,7 @@ export default function LiquidacionesPage() {
               value={estadoFilter}
               onChange={e => {
                 setEstadoFilter(e.target.value);
-                load(1, perPage, vendedorFilter, e.target.value);
+                load(1, perPage, vendedorFilter, e.target.value, fechaInicioFilter, fechaFinFilter);
               }}
               className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm border border-border rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-primary sm:min-w-[120px]"
             >
@@ -206,13 +230,47 @@ export default function LiquidacionesPage() {
               <option value="pagado">Pagados</option>
             </select>
           </div>
+          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+            <span className="text-xs text-text-secondary font-medium">Desde:</span>
+            <input
+              type="date"
+              value={fechaInicioFilter}
+              onChange={e => {
+                setFechaInicioFilter(e.target.value);
+                load(1, perPage, vendedorFilter, estadoFilter, e.target.value, fechaFinFilter);
+              }}
+              className="w-full sm:w-auto px-3 py-1.5 text-sm border border-border rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+            <span className="text-xs text-text-secondary font-medium">Hasta:</span>
+            <input
+              type="date"
+              value={fechaFinFilter}
+              onChange={e => {
+                setFechaFinFilter(e.target.value);
+                load(1, perPage, vendedorFilter, estadoFilter, fechaInicioFilter, e.target.value);
+              }}
+              className="w-full sm:w-auto px-3 py-1.5 text-sm border border-border rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
           <div className="w-full sm:w-auto flex justify-end">
             <ClearFiltersButton
-              visible={!!(vendedorFilter || estadoFilter)}
+              visible={
+                !!(
+                  vendedorFilter ||
+                  estadoFilter ||
+                  fechaInicioFilter !== getWeekRange().start ||
+                  fechaFinFilter !== getWeekRange().end
+                )
+              }
               onClick={() => {
+                const range = getWeekRange();
                 setVendedorFilter('');
                 setEstadoFilter('');
-                load(1, perPage, '', '');
+                setFechaInicioFilter(range.start);
+                setFechaFinFilter(range.end);
+                load(1, perPage, '', '', range.start, range.end);
               }}
             />
           </div>
@@ -245,6 +303,7 @@ export default function LiquidacionesPage() {
               <th className="px-4 py-3 text-right font-semibold text-text-secondary">Total vendido</th>
               <th className="px-4 py-3 text-right font-semibold text-text-secondary">Comisión</th>
               <th className="px-4 py-3 text-right font-semibold text-text-secondary">Salario base</th>
+              <th className="px-4 py-3 text-right font-semibold text-text-secondary">Deuda desc.</th>
               <th className="px-4 py-3 text-right font-semibold text-text-secondary">Total a pagar</th>
               <th className="px-4 py-3 text-center font-semibold text-text-secondary">Estado</th>
               <th className="px-4 py-3 text-center font-semibold text-text-secondary">Pagar</th>
@@ -253,13 +312,13 @@ export default function LiquidacionesPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-text-muted">
+                <td colSpan={9} className="px-4 py-12 text-center text-text-muted">
                   Cargando liquidaciones...
                 </td>
               </tr>
             ) : liquidaciones.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-text-muted">
+                <td colSpan={9} className="px-4 py-12 text-center text-text-muted">
                   No se encontraron liquidaciones.
                 </td>
               </tr>
@@ -273,6 +332,7 @@ export default function LiquidacionesPage() {
                   <td className="px-4 py-3 text-right tabular-nums">{formatCurrency(l.total_vendido)}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-primary">{formatCurrency(l.total_comision)}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-success">{formatCurrency(l.salario_pagado)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-danger font-semibold">{l.deuda ? formatCurrency(l.deuda) : '—'}</td>
                   <td className="px-4 py-3 text-right tabular-nums font-bold text-text-primary">{formatCurrency(l.total_pagado)}</td>
                   <td className="px-4 py-3 text-center">
                     <span className={`px-2 py-0.5 text-xs font-semibold rounded ${estadoLiquidacionColor(l.estado)}`}>
