@@ -360,7 +360,7 @@ export default function RutasPage() {
             stock_actual: Number(p.stock_actual || 0),
             cantidad: detail.cantidad_salida,
             vendido: detail.cantidad_vendida,
-            sobrante: detail.cantidad_devuelta,
+            sobrante: detail.cantidad_salida - detail.cantidad_vendida,
             subtotal: subtotal,
             pago_vendedor: detail.pago_vendedor,
             precio_real: detail.cantidad_vendida > 0 ? Number(detail.precio_venta) - (detail.pago_vendedor / detail.cantidad_vendida) : Number(detail.precio_venta),
