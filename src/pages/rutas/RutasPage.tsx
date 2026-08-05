@@ -4,7 +4,7 @@ import api from '../../api/axios';
 import type { CargaVendedor, Producto, User } from '../../types';
 import Modal from '../../components/ui/Modal';
 import { formatDate, formatCurrency, estadoCargaColor, toLocalDateString } from '../../utils/formatters';
-import { handleIntegerKeyDown } from '../../utils/keyboard';
+import { handleIntegerKeyDown, handleDecimalKeyDown } from '../../utils/keyboard';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
 
 interface ExcelRow {
@@ -230,10 +230,10 @@ export default function RutasPage() {
   const totalCargados = excelData.reduce((sum, r) => sum + r.cantidad, 0);
   const totalVendidos = excelData.reduce((sum, r) => sum + r.vendido, 0);
   const subtotalVenta = excelData.reduce((sum, r) => sum + r.subtotal, 0);
-  const gananciaVendedor = excelData.reduce((sum, r) => sum + r.pago_vendedor, 0);
-  const efectivoReal = Math.max(0, subtotalVenta - gananciaVendedor);
+  const efectivoReal = Math.max(0, subtotalVenta - (parseFloat(excelMerma) || 0));
   const deuda = efectivoReal - (parseFloat(excelEfectivoEntregado) || 0);
 
+  const gananciaVendedor = excelData.reduce((sum, r) => sum + r.pago_vendedor, 0);
   const totalInversion = excelData.reduce((sum, r) => sum + r.inversion, 0);
   const gananciaProductos = subtotalVenta - totalInversion - gananciaVendedor;
   const gananciaNetaRuta = gananciaProductos - (parseFloat(excelGasolina) || 0) - (parseFloat(excelMerma) || 0);
@@ -858,6 +858,7 @@ export default function RutasPage() {
                     min="0"
                     value={excelGasolina}
                     onChange={e => setExcelGasolina(e.target.value)}
+                    onKeyDown={handleDecimalKeyDown}
                     className="w-full px-2.5 py-1.5 text-sm border border-border rounded-md font-semibold"
                   />
                 </div>
@@ -868,6 +869,7 @@ export default function RutasPage() {
                     min="0"
                     value={excelMerma}
                     onChange={e => setExcelMerma(e.target.value)}
+                    onKeyDown={handleDecimalKeyDown}
                     className="w-full px-2.5 py-1.5 text-sm border border-border rounded-md font-semibold"
                   />
                 </div>
@@ -884,6 +886,7 @@ export default function RutasPage() {
                     value={excelEfectivoEntregado}
                     disabled={editingCargaId === null}
                     onChange={e => setExcelEfectivoEntregado(e.target.value)}
+                    onKeyDown={handleDecimalKeyDown}
                     onFocus={e => e.target.select()}
                     className={`w-full px-2.5 py-1.5 text-sm border rounded-md font-bold focus:ring-2 focus:outline-none disabled:opacity-30 disabled:cursor-not-allowed ${
                       (parseFloat(excelEfectivoEntregado) || 0) > efectivoReal
