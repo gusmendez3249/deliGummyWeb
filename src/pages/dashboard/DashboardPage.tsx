@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import axios from 'axios';
 import { Package, AlertTriangle, DollarSign, TrendingUp, Users, ChevronLeft, ChevronRight, RefreshCw, Layers } from 'lucide-react';
 import StatsCard from '../../components/ui/StatsCard';
 import Modal from '../../components/ui/Modal';
@@ -87,41 +88,59 @@ export default function DashboardPage() {
     return { start: '', end: '' };
   }, []);
 
-  const loadStats = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { start, end } = getDates(period, offset);
-      const res = await api.get('/dashboard/stats', {
-        params: { fecha_inicio: start, fecha_fin: end }
-      });
-      setStats(res.data);
-    } catch (err) {
-      console.error('Error loading dashboard stats:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [period, offset, getDates]);
+  // Rango seleccionado (se calcula al instante, sin esperar al servidor)
+  const { start: rangeStart, end: rangeEnd } = getDates(period, offset);
+
+  // Caché en memoria de rangos ya consultados: volver a un mes visitado es instantáneo
+  const cacheRef = useRef(new Map<string, DashboardStatsExtended>());
 
   useEffect(() => {
-    loadStats();
-  }, [loadStats]);
+    const key = `${rangeStart}|${rangeEnd}`;
+    const cached = cacheRef.current.get(key);
+    if (cached) setStats(cached);
+    setLoading(true);
+
+    // Espera un momento antes de pedir datos: si el usuario cambia de mes varias veces
+    // seguidas, solo se consulta el último. Y si llega un cambio nuevo, la petición
+    // anterior se cancela para que no se encimen ni muestren un mes equivocado.
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get('/dashboard/stats', {
+          params: { fecha_inicio: rangeStart, fecha_fin: rangeEnd },
+          signal: controller.signal,
+        });
+        cacheRef.current.set(key, res.data);
+        setStats(res.data);
+        setLoading(false);
+      } catch (err) {
+        if (axios.isCancel(err)) return;
+        console.error('Error loading dashboard stats:', err);
+        setLoading(false);
+      }
+    }, cached ? 0 : 350);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [rangeStart, rangeEnd]);
 
   // Format label showing current date selection
   const getPeriodLabel = () => {
-    if (!stats) return '';
     if (period === 'dia') {
-      return `Día: ${stats.fecha_inicio}`;
+      return `Día: ${rangeStart}`;
     }
     if (period === 'semana') {
-      return `Semana: del ${stats.fecha_inicio} al ${stats.fecha_fin}`;
+      return `Semana: del ${rangeStart} al ${rangeEnd}`;
     }
     if (period === 'mes') {
-      const parts = stats.fecha_inicio.split('-');
+      const parts = rangeStart.split('-');
       const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
       return `Mes: ${months[parseInt(parts[1]) - 1]} ${parts[0]}`;
     }
     if (period === 'ano') {
-      return `Año: ${stats.fecha_inicio.split('-')[0]}`;
+      return `Año: ${rangeStart.split('-')[0]}`;
     }
     return '';
   };
@@ -291,6 +310,9 @@ export default function DashboardPage() {
               <button onClick={handleReset} className="p-1 hover:bg-gray-100 rounded text-text-muted" title="Regresar al periodo actual">
                 <RefreshCw size={12} />
               </button>
+            )}
+            {loading && (
+              <span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" title="Actualizando..." />
             )}
           </div>
         </div>
