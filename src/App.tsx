@@ -1,28 +1,32 @@
-import { type ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AlertProvider } from './contexts/AlertContext';
 import MainLayout from './components/layout/MainLayout';
 import LoginPage from './pages/auth/LoginPage';
-import DashboardPage from './pages/dashboard/DashboardPage';
-import ProductosPage from './pages/productos/ProductosPage';
-import CategoriasPage from './pages/categorias/CategoriasPage';
-import UnidadesMedidaPage from './pages/unidades/UnidadesMedidaPage';
-import InventarioPage from './pages/inventario/InventarioPage';
-import VendedoresPage from './pages/vendedores/VendedoresPage';
-import RutasPage from './pages/rutas/RutasPage';
-import LiquidacionesPage from './pages/liquidaciones/LiquidacionesPage';
-import ReportesPage from './pages/reportes/ReportesPage';
-import UsuariosPage from './pages/usuarios/UsuariosPage';
-import VendedorDashboardPage from './pages/vendedor/VendedorDashboardPage';
-import VentasDirectasPage from './pages/ventas/VentasDirectasPage';
+const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
+const ProductosPage = lazy(() => import('./pages/productos/ProductosPage'));
+const CategoriasPage = lazy(() => import('./pages/categorias/CategoriasPage'));
+const UnidadesMedidaPage = lazy(() => import('./pages/unidades/UnidadesMedidaPage'));
+const InventarioPage = lazy(() => import('./pages/inventario/InventarioPage'));
+const VendedoresPage = lazy(() => import('./pages/vendedores/VendedoresPage'));
+const RutasPage = lazy(() => import('./pages/rutas/RutasPage'));
+const LiquidacionesPage = lazy(() => import('./pages/liquidaciones/LiquidacionesPage'));
+const ReportesPage = lazy(() => import('./pages/reportes/ReportesPage'));
+const UsuariosPage = lazy(() => import('./pages/usuarios/UsuariosPage'));
+const VendedorDashboardPage = lazy(() => import('./pages/vendedor/VendedorDashboardPage'));
+const VentasDirectasPage = lazy(() => import('./pages/ventas/VentasDirectasPage'));
+
+const Spinner = () => (
+  <div className="h-screen w-full flex items-center justify-center bg-surface"><div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/></div>
+);
 
 function PrivateRoute({ children, roles }: { children: ReactNode; roles?: string[] }) {
   const { user, token, isLoading, hasRole } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
-    return <div className="h-screen w-full flex items-center justify-center bg-surface"><div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/></div>;
+    return <Spinner />;
   }
 
   if (!token || !user) {
@@ -36,7 +40,7 @@ function PrivateRoute({ children, roles }: { children: ReactNode; roles?: string
     }
   }
 
-  return children;
+  return <Suspense fallback={<Spinner />}>{children}</Suspense>;
 }
 
 function Home() {

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import api from '../../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
@@ -9,13 +10,21 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [slow, setSlow] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Precalentar el backend: en hosting gratuito el servidor se duerme, así que lo
+  // despertamos en cuanto se abre el login (mientras el usuario escribe sus datos).
+  useEffect(() => {
+    api.get('/ping', { timeout: 90000 }).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    const slowTimer = setTimeout(() => setSlow(true), 4000);
 
     try {
       await login(username, password);
@@ -30,6 +39,8 @@ export default function LoginPage() {
         setError('Error al conectar con el servidor.');
       }
     } finally {
+      clearTimeout(slowTimer);
+      setSlow(false);
       setLoading(false);
     }
   };
@@ -106,6 +117,11 @@ export default function LoginPage() {
               )}
               {loading ? 'Ingresando...' : 'Iniciar sesion'}
             </button>
+            {slow && (
+              <p className="text-xs text-text-secondary text-center">
+                El servidor se está iniciando, esto puede tardar unos segundos...
+              </p>
+            )}
           </form>
         </div>
 
