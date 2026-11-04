@@ -7,6 +7,7 @@ import { handleIntegerKeyDown } from '../../utils/keyboard';
 import Modal from '../../components/ui/Modal';
 import { SectionLoading } from '../../components/ui/TableLoading';
 import TableLoading from '../../components/ui/TableLoading';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 function SafeImage({ src, fallbackIcon }: { src: string | null; fallbackIcon: React.ReactNode }) {
   const [error, setError] = useState(false);
@@ -61,6 +62,7 @@ export default function VentasDirectasPage() {
       setProductos(r.data.data || r.data);
     } catch (e) {
       console.error(e);
+      avisarErrorDeCarga(e, 'los productos');
     } finally {
       setLoading(false);
     }
@@ -77,6 +79,7 @@ export default function VentasDirectasPage() {
       setPagination({ currentPage: r.data.current_page, lastPage: r.data.last_page, total: r.data.total });
     } catch (e) {
       console.error(e);
+      avisarErrorDeCarga(e, 'el historial de ventas');
     } finally {
       setHistorialLoading(false);
     }
@@ -169,7 +172,7 @@ export default function VentasDirectasPage() {
       loadProductos();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      alert(ax.response?.data?.message || 'Error al concretar la venta.');
+      alert(getFriendlyErrorMessage(err, 'No se pudo registrar la venta.'));
     } finally {
       setSubmitting(false);
     }
@@ -182,7 +185,7 @@ export default function VentasDirectasPage() {
       setModalOpen(true);
     } catch (e) {
       console.error(e);
-      alert('Error al cargar detalle.');
+      alert(getFriendlyErrorMessage(e, 'No se pudo abrir el detalle de la venta.'));
     }
   };
 

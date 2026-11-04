@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axios';
 import LoadingProgress from '../../components/ui/LoadingProgress';
+import { getFriendlyErrorMessage } from '../../utils/friendlyError';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
@@ -31,14 +32,8 @@ export default function LoginPage() {
       await login(username, password);
       navigate('/');
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
-      if (axiosErr.response?.data?.errors?.username) {
-        setError(axiosErr.response.data.errors.username[0]);
-      } else if (axiosErr.response?.data?.message) {
-        setError(axiosErr.response.data.message);
-      } else {
-        setError('Error al conectar con el servidor.');
-      }
+      // Credenciales incorrectas, cuenta desactivada, sin internet, sistema iniciando...
+      setError(getFriendlyErrorMessage(err, 'No pudimos iniciar tu sesión.'));
     } finally {
       clearTimeout(slowTimer);
       setSlow(false);
@@ -128,7 +123,7 @@ export default function LoginPage() {
             />
             {slow && (
               <p className="text-xs text-text-secondary text-center">
-                El servidor se está iniciando, esto puede tardar unos segundos...
+                Estamos preparando todo para ti, esto puede tardar unos segundos...
               </p>
             )}
           </form>

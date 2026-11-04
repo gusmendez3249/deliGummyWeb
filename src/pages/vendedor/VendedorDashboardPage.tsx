@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import type { CargaVendedor, LiquidacionVendedor } from '../../types';
 import { formatCurrency, formatDate, tipoPagoLabel, periodoPagoLabel, estadoLiquidacionColor } from '../../utils/formatters';
 import { SectionLoading } from '../../components/ui/TableLoading';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 export default function VendedorDashboardPage() {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export default function VendedorDashboardPage() {
       setLiquidaciones(liqRes.data);
     } catch (err) {
       console.error('Error al cargar datos del vendedor:', err);
+      avisarErrorDeCarga(err, 'tus rutas y liquidaciones');
     } finally {
       setLoading(false);
     }

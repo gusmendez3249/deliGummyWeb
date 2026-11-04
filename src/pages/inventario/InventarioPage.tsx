@@ -8,6 +8,7 @@ import { formatDateTime, tipoMovimientoLabel, tipoMovimientoColor, formatCurrenc
 import { handleIntegerKeyDown } from '../../utils/keyboard';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
 import TableLoading from '../../components/ui/TableLoading';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 // Start of current week helper (Monday)
 const getStartOfWeek = () => {
@@ -57,6 +58,7 @@ export default function InventarioPage() {
       setPagination({ currentPage: r.data.current_page, lastPage: r.data.last_page, total: r.data.total });
     } catch (e) {
       console.error(e);
+      avisarErrorDeCarga(e, 'los movimientos');
     } finally {
       setLoading(false);
     }
@@ -75,6 +77,7 @@ export default function InventarioPage() {
       setProductos(r.data.data || r.data);
     } catch (e) {
       console.error(e);
+      avisarErrorDeCarga(e, 'el inventario');
     } finally {
       setLoading(false);
     }
@@ -106,8 +109,8 @@ export default function InventarioPage() {
         const f: Record<string, string> = {};
         Object.entries(ax.response.data.errors).forEach(([k, v]) => { f[k] = v[0]; });
         setErrors(f);
-      } else if (ax.response?.data?.message) {
-        setErrors({ general: ax.response.data.message });
+      } else {
+        setErrors({ general: getFriendlyErrorMessage(err, 'No se pudo registrar el movimiento.') });
       }
     } finally {
       setSubmitting(false);

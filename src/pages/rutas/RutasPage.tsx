@@ -7,6 +7,7 @@ import { formatDate, formatCurrency, estadoCargaColor, toLocalDateString } from 
 import { handleIntegerKeyDown, handleDecimalKeyDown } from '../../utils/keyboard';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
 import TableLoading from '../../components/ui/TableLoading';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 interface ExcelRow {
   producto_id: number;
@@ -104,6 +105,7 @@ export default function RutasPage() {
       setPagination({ currentPage: r.data.current_page, lastPage: r.data.last_page, total: r.data.total });
     } catch (e) {
       console.error(e);
+      avisarErrorDeCarga(e, 'las rutas');
     } finally {
       setLoading(false);
     }
@@ -313,7 +315,7 @@ export default function RutasPage() {
       load();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      alert(ax.response?.data?.message || 'Error al guardar la ruta');
+      alert(getFriendlyErrorMessage(err, 'No se pudo guardar la ruta.'));
     } finally {
       setSubmitting(false);
     }
@@ -395,7 +397,7 @@ export default function RutasPage() {
       setActiveTab('nueva'); // Switch to Excel edit tab
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      alert(ax.response?.data?.message || 'Contraseña incorrecta, intente de nuevo.');
+      alert(getFriendlyErrorMessage(err, 'No se pudo verificar la contraseña.'));
     } finally {
       setVerifyingPassword(false);
     }
@@ -1159,7 +1161,7 @@ export default function RutasPage() {
                   load();
                 } catch (err: unknown) {
                   const ax = err as { response?: { data?: { message?: string } } };
-                  alert(ax.response?.data?.message || 'Error al cancelar carga');
+                  alert(getFriendlyErrorMessage(err, 'No se pudo cancelar la ruta.'));
                 } finally {
                   setSubmitting(false);
                 }

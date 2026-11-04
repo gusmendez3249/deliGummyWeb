@@ -16,6 +16,7 @@ import api from '../../api/axios';
 import { formatCurrency, formatNumber, tipoMovimientoLabel, tipoMovimientoColor, formatDateTime } from '../../utils/formatters';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend } from 'chart.js';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
@@ -139,6 +140,7 @@ export default function DashboardPage() {
       } catch (err) {
         if (axios.isCancel(err)) return;
         console.error('Error loading dashboard stats:', err);
+        avisarErrorDeCarga(err, 'las estadísticas');
         setLoading(false);
         terminarBarra();
       }

@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, formatNumber } from '../../utils/formatters';
 import { handleDecimalKeyDown, handleIntegerKeyDown } from '../../utils/keyboard';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 function SafeImage({ src, fallbackIcon }: { src: string | null; fallbackIcon: React.ReactNode }) {
   const [error, setError] = useState(false);
@@ -47,7 +48,7 @@ function StockAdder({ product, onAdded }: { product: Producto; onAdded: () => vo
       onAdded();
     } catch (err: any) {
       console.error(err);
-      alert(err.response?.data?.message || 'Error al agregar stock.');
+      alert(getFriendlyErrorMessage(err, 'No se pudo agregar el stock.'));
     } finally {
       setSubmitting(false);
     }
@@ -144,6 +145,7 @@ export default function ProductosPage() {
       setPagination({ currentPage: res.data.current_page, lastPage: res.data.last_page, total: res.data.total });
     } catch (err) {
       console.error(err);
+      avisarErrorDeCarga(err, 'los productos');
     } finally {
       setLoading(false);
     }
@@ -206,6 +208,8 @@ export default function ProductosPage() {
         const flat: Record<string, string> = {};
         Object.entries(axiosErr.response.data.errors).forEach(([k, v]) => { flat[k] = v[0]; });
         setErrors(flat);
+      } else {
+        alert(getFriendlyErrorMessage(err, 'No se pudo guardar el producto.'));
       }
     } finally {
       setSubmitting(false);
@@ -221,7 +225,7 @@ export default function ProductosPage() {
       loadProductos(pagination.currentPage);
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
-      alert(axiosErr.response?.data?.message || 'Error al eliminar.');
+      alert(getFriendlyErrorMessage(err, 'No se pudo eliminar.'));
     }
   };
 

@@ -173,7 +173,7 @@ export default function ImageCapture({
       }
     } catch (err) {
       console.error('Error al alternar cámara:', err);
-      setWebcamError('No se pudo acceder a la cámara seleccionada.');
+      setWebcamError('No pudimos usar esta cámara. Revisa que el navegador tenga permiso para usarla o elige otra.');
     }
   };
 

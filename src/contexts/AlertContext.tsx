@@ -31,12 +31,14 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
                         msg.toLowerCase().includes('exito') || 
                         msg.toLowerCase().includes('correctamente') ||
                         msg.toLowerCase().includes('guardada');
-      const isError = msg.toLowerCase().includes('error') || 
-                      msg.toLowerCase().includes('falló') || 
-                      msg.toLowerCase().includes('incorrecta');
-      
+      const texto = msg.toLowerCase();
+      const isError = ['error', 'falló', 'incorrecta', 'no se pudo', 'no pudimos', 'inténtalo de nuevo',
+                       'no tienes permiso', 'sesión terminó', 'algo salió mal']
+                      .some((k) => texto.includes(k));
+
       const type = isSuccess ? 'success' : (isError ? 'error' : 'warning');
-      const title = isSuccess ? 'Éxito' : (isError ? 'Error' : 'Atención');
+      // Títulos amables: sin palabras técnicas ni alarmantes
+      const title = isSuccess ? '¡Listo!' : (isError ? 'No se pudo completar' : 'Atención');
       showAlert(msg, title, type);
     };
 

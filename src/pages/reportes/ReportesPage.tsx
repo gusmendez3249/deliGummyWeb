@@ -7,6 +7,7 @@ import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
 import { SectionLoading } from '../../components/ui/TableLoading';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -47,7 +48,7 @@ export default function ReportesPage() {
       setVentas(ventasRes.data);
       setRanking(rankingRes.data);
       setVentasPeriodo(periodoRes.data);
-    } catch(e) { console.error(e); } finally { setLoading(false); }
+    } catch(e) { console.error(e); avisarErrorDeCarga(e, 'los reportes'); } finally { setLoading(false); }
   };
 
   const exportarExcel = async () => {
@@ -66,7 +67,7 @@ export default function ReportesPage() {
       link.remove();
     } catch (e) {
       console.error(e);
-      alert('Error al exportar archivo Excel.');
+      alert(getFriendlyErrorMessage(e, 'No se pudo generar el archivo de Excel.'));
     }
   };
 

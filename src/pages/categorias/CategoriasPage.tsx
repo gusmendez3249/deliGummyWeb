@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import type { Categoria } from '../../types';
 import Modal from '../../components/ui/Modal';
 import TableLoading from '../../components/ui/TableLoading';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 export default function CategoriasPage() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -26,6 +27,7 @@ export default function CategoriasPage() {
       setCategorias(r.data);
     } catch (e) {
       console.error(e);
+      avisarErrorDeCarga(e, 'las categorías');
     } finally {
       setLoading(false);
     }
@@ -73,6 +75,8 @@ export default function CategoriasPage() {
           f[k] = v[0];
         });
         setErrors(f);
+      } else {
+        alert(getFriendlyErrorMessage(err, 'No se pudo guardar la categoría.'));
       }
     } finally {
       setSubmitting(false);
@@ -86,7 +90,7 @@ export default function CategoriasPage() {
       load();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      alert(ax.response?.data?.message || 'Error al eliminar.');
+      alert(getFriendlyErrorMessage(err, 'No se pudo eliminar.'));
     }
   };
 

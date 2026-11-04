@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import type { UnidadMedida } from '../../types';
 import Modal from '../../components/ui/Modal';
 import TableLoading from '../../components/ui/TableLoading';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 export default function UnidadesMedidaPage() {
   const [unidades, setUnidades] = useState<UnidadMedida[]>([]);
@@ -26,6 +27,7 @@ export default function UnidadesMedidaPage() {
       setUnidades(r.data);
     } catch (e) {
       console.error(e);
+      avisarErrorDeCarga(e, 'las unidades de medida');
     } finally {
       setLoading(false);
     }
@@ -70,6 +72,8 @@ export default function UnidadesMedidaPage() {
           f[k] = v[0];
         });
         setErrors(f);
+      } else {
+        alert(getFriendlyErrorMessage(err, 'No se pudo guardar la unidad de medida.'));
       }
     } finally {
       setSubmitting(false);
@@ -83,7 +87,7 @@ export default function UnidadesMedidaPage() {
       load();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      alert(ax.response?.data?.message || 'Error');
+      alert(getFriendlyErrorMessage(err));
     }
   };
 

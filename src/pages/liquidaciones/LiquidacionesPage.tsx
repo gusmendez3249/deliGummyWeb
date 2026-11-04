@@ -6,6 +6,7 @@ import Modal from '../../components/ui/Modal';
 import { formatDate, formatCurrency, estadoLiquidacionColor, toLocalDateString } from '../../utils/formatters';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
 import TableLoading from '../../components/ui/TableLoading';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 const getWeekRange = () => {
   const today = new Date();
@@ -65,6 +66,7 @@ export default function LiquidacionesPage() {
       setPagination({ currentPage: r.data.current_page, lastPage: r.data.last_page, total: r.data.total });
     } catch (e) {
       console.error(e);
+      avisarErrorDeCarga(e, 'las liquidaciones');
     } finally {
       setLoading(false);
     }
@@ -96,7 +98,7 @@ export default function LiquidacionesPage() {
       load(1);
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      alert(ax.response?.data?.message || 'Error');
+      alert(getFriendlyErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -115,7 +117,7 @@ export default function LiquidacionesPage() {
       load(1);
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      alert(ax.response?.data?.message || 'Error al generar liquidación de urgencia.');
+      alert(getFriendlyErrorMessage(err, 'No se pudo generar la liquidación.'));
     } finally {
       setSubmitting(false);
     }
@@ -135,7 +137,7 @@ export default function LiquidacionesPage() {
       load(pagination.currentPage);
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      alert(ax.response?.data?.message || 'Error');
+      alert(getFriendlyErrorMessage(err));
     } finally {
       setPayoutSubmitting(false);
     }
@@ -149,7 +151,7 @@ export default function LiquidacionesPage() {
       await api.put('/configuraciones', { clave: 'dia_liquidacion_semanal', valor: val }, { progressLabel: 'Guardando configuración...' });
     } catch (err) {
       console.error(err);
-      alert('Error al guardar configuración.');
+      alert(getFriendlyErrorMessage(err, 'No se pudo guardar la configuración.'));
     } finally {
       setSavingSettings(false);
     }

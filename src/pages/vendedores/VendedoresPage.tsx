@@ -7,6 +7,7 @@ import { tipoPagoLabel, periodoPagoLabel, formatCurrency } from '../../utils/for
 import { handleDecimalKeyDown } from '../../utils/keyboard';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
 import TableLoading from '../../components/ui/TableLoading';
+import { getFriendlyErrorMessage, avisarErrorDeCarga } from '../../utils/friendlyError';
 
 export default function VendedoresPage() {
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
@@ -39,6 +40,7 @@ export default function VendedoresPage() {
       setVendedores(r.data);
     } catch (e) {
       console.error(e);
+      avisarErrorDeCarga(e, 'los vendedores');
     } finally {
       setLoading(false);
     }
@@ -105,6 +107,8 @@ export default function VendedoresPage() {
           f[k] = v[0];
         });
         setErrors(f);
+      } else {
+        alert(getFriendlyErrorMessage(err, 'No se pudo guardar el vendedor.'));
       }
     } finally {
       setSubmitting(false);
@@ -118,7 +122,7 @@ export default function VendedoresPage() {
       load();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
-      alert(ax.response?.data?.message || 'Error');
+      alert(getFriendlyErrorMessage(err));
     }
   };
 
