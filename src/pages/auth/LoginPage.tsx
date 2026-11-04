@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axios';
+import LoadingProgress from '../../components/ui/LoadingProgress';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
@@ -17,7 +18,7 @@ export default function LoginPage() {
   // Precalentar el backend: en hosting gratuito el servidor se duerme, así que lo
   // despertamos en cuanto se abre el login (mientras el usuario escribe sus datos).
   useEffect(() => {
-    api.get('/ping', { timeout: 90000 }).catch(() => {});
+    api.get('/ping', { timeout: 90000, silent: true }).catch(() => {});
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,6 +118,14 @@ export default function LoginPage() {
               )}
               {loading ? 'Ingresando...' : 'Iniciar sesion'}
             </button>
+            <LoadingProgress
+              active={loading}
+              label={(pct) =>
+                pct < 40 ? 'Verificando credenciales...' :
+                pct < 75 ? 'Cargando tu información...' :
+                'Casi listo...'
+              }
+            />
             {slow && (
               <p className="text-xs text-text-secondary text-center">
                 El servidor se está iniciando, esto puede tardar unos segundos...

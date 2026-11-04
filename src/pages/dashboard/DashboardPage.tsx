@@ -1,5 +1,14 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import axios from 'axios';
+import { loadingBus } from '../../utils/loadingBus';
+import LoadingProgress from '../../components/ui/LoadingProgress';
+
+// Mensajes que acompañan a la barra de progreso según el avance
+const etapaCarga = (pct: number) =>
+  pct < 35 ? 'Consultando ventas...' :
+  pct < 60 ? 'Calculando utilidades...' :
+  pct < 82 ? 'Preparando gráficas...' :
+  'Casi listo...';
 import { Package, AlertTriangle, DollarSign, TrendingUp, Users, ChevronLeft, ChevronRight, RefreshCw, Layers } from 'lucide-react';
 import StatsCard from '../../components/ui/StatsCard';
 import Modal from '../../components/ui/Modal';
@@ -104,25 +113,41 @@ export default function DashboardPage() {
     // seguidas, solo se consulta el último. Y si llega un cambio nuevo, la petición
     // anterior se cancela para que no se encimen ni muestren un mes equivocado.
     const controller = new AbortController();
+
+    // La barra superior arranca desde el clic (no hasta que sale la petición),
+    // así el usuario ve respuesta inmediata durante la espera del debounce.
+    let barraActiva = true;
+    loadingBus.start();
+    const terminarBarra = () => {
+      if (barraActiva) {
+        barraActiva = false;
+        loadingBus.done();
+      }
+    };
+
     const timer = setTimeout(async () => {
       try {
         const res = await api.get('/dashboard/stats', {
           params: { fecha_inicio: rangeStart, fecha_fin: rangeEnd },
           signal: controller.signal,
+          silent: true, // la barra ya la controla este efecto
         });
         cacheRef.current.set(key, res.data);
         setStats(res.data);
         setLoading(false);
+        terminarBarra();
       } catch (err) {
         if (axios.isCancel(err)) return;
         console.error('Error loading dashboard stats:', err);
         setLoading(false);
+        terminarBarra();
       }
     }, cached ? 0 : 350);
 
     return () => {
       clearTimeout(timer);
       controller.abort();
+      terminarBarra();
     };
   }, [rangeStart, rangeEnd]);
 
@@ -233,11 +258,12 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
+        <LoadingProgress active={loading} label={etapaCarga} className="max-w-md" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-lg border border-border p-5 shadow-sm animate-pulse">
-              <div className="h-4 bg-gray-100 rounded mb-2 w-24" />
-              <div className="h-7 bg-gray-100 rounded w-16" />
+            <div key={i} className="bg-white rounded-lg border border-border p-5 shadow-sm">
+              <div className="h-4 rounded mb-2 w-24 skeleton-shimmer" />
+              <div className="h-7 rounded w-16 skeleton-shimmer" />
             </div>
           ))}
         </div>
@@ -312,12 +338,22 @@ export default function DashboardPage() {
               </button>
             )}
             {loading && (
-              <span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" title="Actualizando..." />
+              <span className="flex items-center gap-1.5 text-[11px] font-medium text-primary pl-1">
+                <span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                Actualizando
+              </span>
             )}
           </div>
         </div>
       </div>
 
+      {/* Barra de progreso visible mientras se actualiza el periodo */}
+      <div className="min-h-[28px]">
+        <LoadingProgress active={loading} label={etapaCarga} />
+      </div>
+
+      {/* Contenido: se atenúa mientras se actualiza el periodo seleccionado */}
+      <div className={`space-y-6 ${loading ? 'is-refreshing' : 'is-refreshed'}`} aria-busy={loading}>
       {/* KPI Cards: Financial Row */}
       <div className="space-y-2">
         <h2 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Resumen Financiero</h2>
@@ -528,6 +564,8 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+      </div>
+
       </div>
 
       {/* Breakdown Modal */}

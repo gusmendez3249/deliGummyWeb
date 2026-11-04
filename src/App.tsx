@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AlertProvider } from './contexts/AlertContext';
 import MainLayout from './components/layout/MainLayout';
+import TopProgressBar, { RouteLoadingIndicator } from './components/ui/TopProgressBar';
+import PageLoader from './components/ui/PageLoader';
 import LoginPage from './pages/auth/LoginPage';
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const ProductosPage = lazy(() => import('./pages/productos/ProductosPage'));
@@ -17,8 +19,14 @@ const UsuariosPage = lazy(() => import('./pages/usuarios/UsuariosPage'));
 const VendedorDashboardPage = lazy(() => import('./pages/vendedor/VendedorDashboardPage'));
 const VentasDirectasPage = lazy(() => import('./pages/ventas/VentasDirectasPage'));
 
+// Pantalla de arranque mientras se verifica la sesión (la barra superior también avanza)
 const Spinner = () => (
-  <div className="h-screen w-full flex items-center justify-center bg-surface"><div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/></div>
+  <RouteLoadingIndicator>
+    <div className="h-screen w-full flex flex-col items-center justify-center gap-3 bg-surface">
+      <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"/>
+      <p className="text-sm text-text-secondary animate-pulse">Cargando DeliGumy...</p>
+    </div>
+  </RouteLoadingIndicator>
 );
 
 function PrivateRoute({ children, roles }: { children: ReactNode; roles?: string[] }) {
@@ -40,7 +48,7 @@ function PrivateRoute({ children, roles }: { children: ReactNode; roles?: string
     }
   }
 
-  return <Suspense fallback={<Spinner />}>{children}</Suspense>;
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 }
 
 function Home() {
@@ -83,6 +91,7 @@ function App() {
   return (
     <AuthProvider>
       <AlertProvider>
+        <TopProgressBar />
         <Router>
           <AppRoutes />
         </Router>

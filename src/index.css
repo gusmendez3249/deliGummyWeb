@@ -168,3 +168,56 @@ tbody tr.animate-pulse > td + td {
 th.text-right, td.text-right { text-align: right !important; }
 th.text-center, td.text-center { text-align: center !important; }
 th.text-left, td.text-left { text-align: left !important; }
+
+/* ======================================
+   Estados de carga (velocidad percibida)
+   ====================================== */
+
+/* Brillo que recorre los bloques del esqueleto */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #EEF2F7 0%, #F8FAFC 40%, #EEF2F7 80%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* Contenido que se está actualizando: se atenúa suavemente sin desaparecer */
+.is-refreshing {
+  opacity: 0.55;
+  filter: saturate(0.6);
+  transition: opacity 200ms ease, filter 200ms ease;
+}
+.is-refreshed {
+  opacity: 1;
+  filter: none;
+  transition: opacity 250ms ease, filter 250ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer { animation: none; }
+}
+
+/* Franjas diagonales que se desplazan: la barra "se mueve" aunque el avance sea lento */
+.progress-stripes {
+  background-image: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.25) 25%, transparent 25%,
+    transparent 50%, rgba(255, 255, 255, 0.25) 50%,
+    rgba(255, 255, 255, 0.25) 75%, transparent 75%, transparent
+  );
+  background-size: 16px 16px;
+  animation: progress-stripes 0.8s linear infinite;
+}
+
+@keyframes progress-stripes {
+  from { background-position: 16px 0; }
+  to { background-position: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress-stripes { animation: none; }
+}
