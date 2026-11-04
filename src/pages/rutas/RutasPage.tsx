@@ -6,6 +6,7 @@ import Modal from '../../components/ui/Modal';
 import { formatDate, formatCurrency, estadoCargaColor, toLocalDateString } from '../../utils/formatters';
 import { handleIntegerKeyDown, handleDecimalKeyDown } from '../../utils/keyboard';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
+import TableLoading from '../../components/ui/TableLoading';
 
 interface ExcelRow {
   producto_id: number;
@@ -289,10 +290,10 @@ export default function RutasPage() {
       };
 
       if (editingCargaId) {
-        await api.put(`/cargas/${editingCargaId}`, payload);
+        await api.put(`/cargas/${editingCargaId}`, payload, { progressLabel: 'Actualizando ruta...' });
         alert('Ruta actualizada exitosamente.');
       } else {
-        await api.post('/cargas', payload);
+        await api.post('/cargas', payload, { progressLabel: 'Guardando ruta...' });
         alert('Ruta generada y guardada exitosamente.');
       }
       
@@ -331,7 +332,7 @@ export default function RutasPage() {
     if (!verifyPasswordVal) return;
     setVerifyingPassword(true);
     try {
-      await api.post('/verify-password', { password: verifyPasswordVal });
+      await api.post('/verify-password', { password: verifyPasswordVal }, { progressLabel: 'Verificando contraseña...' });
       
       // Password correct! Load route details
       const carga = cargaToEdit!;
@@ -572,11 +573,7 @@ export default function RutasPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-3">
-                      <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                    </td>
-                  </tr>
+                  <TableLoading colSpan={7} label="Cargando rutas..." />
                 ) : cargas.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
@@ -626,7 +623,7 @@ export default function RutasPage() {
                         </button>
                         <button
                           onClick={async () => {
-                            const r = await api.get(`/cargas/${c.id}`);
+                            const r = await api.get(`/cargas/${c.id}`, { progressLabel: 'Cargando detalle de la ruta...' });
                             setSelectedCarga(r.data);
                             setDetailModal(true);
                           }}
@@ -1157,7 +1154,7 @@ export default function RutasPage() {
                 if (!cargaToCancel) return;
                 setSubmitting(true);
                 try {
-                  await api.post(`/cargas/${cargaToCancel}/cancelar`);
+                  await api.post(`/cargas/${cargaToCancel}/cancelar`, null, { progressLabel: 'Cancelando ruta...' });
                   setCancelModal(false);
                   load();
                 } catch (err: unknown) {

@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import api from '../../api/axios';
 import type { Categoria } from '../../types';
 import Modal from '../../components/ui/Modal';
+import TableLoading from '../../components/ui/TableLoading';
 
 export default function CategoriasPage() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -58,9 +59,9 @@ export default function CategoriasPage() {
     setErrors({});
     try {
       if (editing) {
-        await api.put(`/categorias/${editing.id}`, form);
+        await api.put(`/categorias/${editing.id}`, form, { progressLabel: 'Actualizando categoría...' });
       } else {
-        await api.post('/categorias', form);
+        await api.post('/categorias', form, { progressLabel: 'Guardando categoría...' });
       }
       setModalOpen(false);
       load();
@@ -81,7 +82,7 @@ export default function CategoriasPage() {
   const handleDelete = async (c: Categoria) => {
     if (!confirm(`¿Eliminar "${c.nombre}"?`)) return;
     try {
-      await api.delete(`/categorias/${c.id}`);
+      await api.delete(`/categorias/${c.id}`, { progressLabel: 'Eliminando categoría...' });
       load();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
@@ -150,13 +151,7 @@ export default function CategoriasPage() {
           </thead>
           <tbody>
             {loading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <tr key={i} className="border-b border-border">
-                  <td className="px-4 py-3" colSpan={4}>
-                    <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                  </td>
-                </tr>
-              ))
+              <TableLoading colSpan={4} label="Cargando categorías..." rows={3} />
             ) : paginatedCategorias.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-12 text-center text-text-muted">

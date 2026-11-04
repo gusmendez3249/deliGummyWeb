@@ -4,6 +4,7 @@ import api from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import type { CargaVendedor, LiquidacionVendedor } from '../../types';
 import { formatCurrency, formatDate, tipoPagoLabel, periodoPagoLabel, estadoLiquidacionColor } from '../../utils/formatters';
+import { SectionLoading } from '../../components/ui/TableLoading';
 
 export default function VendedorDashboardPage() {
   const { user } = useAuth();
@@ -33,8 +34,8 @@ export default function VendedorDashboardPage() {
 
   if (loading) {
     return (
-      <div className="h-64 w-full flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      <div className="max-w-3xl mx-auto py-8">
+        <SectionLoading label="Cargando tus rutas y liquidaciones..." rows={4} />
       </div>
     );
   }

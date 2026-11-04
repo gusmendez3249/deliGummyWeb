@@ -45,7 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (username: string, password: string) => {
-    const res = await api.post('/login', { username, password });
+    // El login tiene su propia barra de progreso en la pantalla
+    const res = await api.post('/login', { username, password }, { progressLabel: false });
     const { user: userData, token: tokenData } = res.data;
     setUser(userData);
     setToken(tokenData);
@@ -55,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await api.post('/logout');
+      await api.post('/logout', null, { progressLabel: 'Cerrando sesión...' });
     } catch {
       // Silently fail if backend is unreachable
     } finally {

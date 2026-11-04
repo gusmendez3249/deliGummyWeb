@@ -7,6 +7,7 @@ import Modal from '../../components/ui/Modal';
 import { formatDateTime, tipoMovimientoLabel, tipoMovimientoColor, formatCurrency, toLocalDateString } from '../../utils/formatters';
 import { handleIntegerKeyDown } from '../../utils/keyboard';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
+import TableLoading from '../../components/ui/TableLoading';
 
 // Start of current week helper (Monday)
 const getStartOfWeek = () => {
@@ -92,7 +93,7 @@ export default function InventarioPage() {
     setSubmitting(true);
     setErrors({});
     try {
-      await api.post('/movimientos', { ...form, cantidad: parseInt(form.cantidad) });
+      await api.post('/movimientos', { ...form, cantidad: parseInt(form.cantidad) }, { progressLabel: 'Registrando movimiento...' });
       setModalOpen(false);
       if (activeTab === 'movimientos') {
         loadMovimientos();
@@ -226,11 +227,7 @@ export default function InventarioPage() {
               </thead>
               <tbody className="divide-y divide-slate-300 bg-white">
                 {loading ? (
-                  <tr>
-                    <td colSpan={10} className="px-6 py-10 text-center text-text-secondary">
-                      Cargando inventario...
-                    </td>
-                  </tr>
+                  <TableLoading colSpan={10} label="Cargando inventario..." />
                 ) : filteredProductos.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="px-6 py-10 text-center text-text-secondary">
@@ -360,6 +357,7 @@ export default function InventarioPage() {
             ]}
             data={movimientos}
             isLoading={loading}
+            loadingLabel="Cargando movimientos..."
             pagination={{
               currentPage: pagination.currentPage,
               lastPage: pagination.lastPage,

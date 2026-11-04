@@ -41,7 +41,7 @@ function StockAdder({ product, onAdded }: { product: Producto; onAdded: () => vo
         tipo_movimiento: 'alta',
         cantidad: num,
         observaciones: 'Entrada rápida de stock desde catálogo'
-      });
+      }, { progressLabel: 'Agregando stock...' });
       setQty('');
       alert(`Se agregaron ${num} unidades a "${product.nombre}" con éxito.`);
       onAdded();
@@ -194,9 +194,9 @@ export default function ProductosPage() {
       if (imageFile) fd.append('imagen', imageFile);
 
       if (editingProduct) {
-        await api.post(`/productos/${editingProduct.id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        await api.post(`/productos/${editingProduct.id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' }, progressLabel: 'Actualizando producto...' });
       } else {
-        await api.post('/productos', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        await api.post('/productos', fd, { headers: { 'Content-Type': 'multipart/form-data' }, progressLabel: 'Guardando producto...' });
       }
       setModalOpen(false);
       loadProductos(pagination.currentPage);
@@ -215,7 +215,7 @@ export default function ProductosPage() {
   const confirmDelete = async () => {
     if (!productToDelete) return;
     try {
-      await api.delete(`/productos/${productToDelete.id}`);
+      await api.delete(`/productos/${productToDelete.id}`, { progressLabel: 'Eliminando producto...' });
       setDeleteModalOpen(false);
       setProductToDelete(null);
       loadProductos(pagination.currentPage);
@@ -352,6 +352,7 @@ export default function ProductosPage() {
         searchPlaceholder="Buscar por nombre, codigo o marca..."
         onSearch={setSearchQuery}
         isLoading={loading}
+        loadingLabel="Cargando productos..."
         emptyMessage="No hay productos registrados."
         pagination={{
           ...pagination,

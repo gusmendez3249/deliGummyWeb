@@ -6,6 +6,7 @@ import { formatCurrency, toLocalDateString } from '../../utils/formatters';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
+import { SectionLoading } from '../../components/ui/TableLoading';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -52,6 +53,7 @@ export default function ReportesPage() {
   const exportarExcel = async () => {
     try {
       const response = await api.get('/reportes/exportar-excel', {
+        progressLabel: 'Generando archivo Excel...',
         params: filtros,
         responseType: 'blob',
       });
@@ -114,6 +116,8 @@ export default function ReportesPage() {
           </button>}
         </div>
       </div>
+
+      {loading && <SectionLoading label="Generando reportes..." rows={4} />}
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">

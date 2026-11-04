@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import api from '../../api/axios';
 import type { UnidadMedida } from '../../types';
 import Modal from '../../components/ui/Modal';
+import TableLoading from '../../components/ui/TableLoading';
 
 export default function UnidadesMedidaPage() {
   const [unidades, setUnidades] = useState<UnidadMedida[]>([]);
@@ -57,8 +58,8 @@ export default function UnidadesMedidaPage() {
     setSubmitting(true);
     setErrors({});
     try {
-      if (editing) await api.put(`/unidades-medida/${editing.id}`, form);
-      else await api.post('/unidades-medida', form);
+      if (editing) await api.put(`/unidades-medida/${editing.id}`, form, { progressLabel: 'Actualizando unidad...' });
+      else await api.post('/unidades-medida', form, { progressLabel: 'Guardando unidad...' });
       setModalOpen(false);
       load();
     } catch (err: unknown) {
@@ -78,7 +79,7 @@ export default function UnidadesMedidaPage() {
   const handleDelete = async (u: UnidadMedida) => {
     if (!confirm(`¿Eliminar "${u.nombre}"?`)) return;
     try {
-      await api.delete(`/unidades-medida/${u.id}`);
+      await api.delete(`/unidades-medida/${u.id}`, { progressLabel: 'Eliminando unidad...' });
       load();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
@@ -147,13 +148,7 @@ export default function UnidadesMedidaPage() {
           </thead>
           <tbody>
             {loading ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <tr key={i} className="border-b border-border">
-                  <td className="px-4 py-3" colSpan={4}>
-                    <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                  </td>
-                </tr>
-              ))
+              <TableLoading colSpan={4} label="Cargando unidades de medida..." rows={3} />
             ) : paginatedUnidades.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-12 text-center text-text-muted">

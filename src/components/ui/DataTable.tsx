@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import TableLoading from './TableLoading';
 
 interface Column<T> {
   key: string;
@@ -24,6 +25,8 @@ interface DataTableProps<T> {
   actions?: (item: T) => React.ReactNode;
   emptyMessage?: string;
   isLoading?: boolean;
+  /** Texto de la barra de progreso mientras carga */
+  loadingLabel?: string;
 }
 
 export default function DataTable<T extends Record<string, any>>({
@@ -35,6 +38,7 @@ export default function DataTable<T extends Record<string, any>>({
   actions,
   emptyMessage = 'No hay datos para mostrar.',
   isLoading,
+  loadingLabel = 'Cargando datos...',
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -96,20 +100,7 @@ export default function DataTable<T extends Record<string, any>>({
           </thead>
           <tbody className="divide-y divide-slate-200 bg-white">
             {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-border">
-                  {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-3">
-                      <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                    </td>
-                  ))}
-                  {actions && (
-                    <td className="px-4 py-3">
-                      <div className="h-4 bg-gray-100 rounded animate-pulse w-16 ml-auto" />
-                    </td>
-                  )}
-                </tr>
-              ))
+              <TableLoading colSpan={columns.length + (actions ? 1 : 0)} label={loadingLabel} />
             ) : data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length + (actions ? 1 : 0)} className="px-4 py-12 text-center text-text-muted">

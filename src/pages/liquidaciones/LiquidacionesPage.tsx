@@ -5,6 +5,7 @@ import type { LiquidacionVendedor, Vendedor } from '../../types';
 import Modal from '../../components/ui/Modal';
 import { formatDate, formatCurrency, estadoLiquidacionColor, toLocalDateString } from '../../utils/formatters';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
+import TableLoading from '../../components/ui/TableLoading';
 
 const getWeekRange = () => {
   const today = new Date();
@@ -90,7 +91,7 @@ export default function LiquidacionesPage() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post('/liquidaciones/generar', { ...form, vendedor_id: parseInt(form.vendedor_id) });
+      await api.post('/liquidaciones/generar', { ...form, vendedor_id: parseInt(form.vendedor_id) }, { progressLabel: 'Generando liquidación...' });
       setModalOpen(false);
       load(1);
     } catch (err: unknown) {
@@ -108,7 +109,7 @@ export default function LiquidacionesPage() {
     }
     setSubmitting(true);
     try {
-      await api.post('/liquidaciones/generar-emergencia', { vendedor_id: parseInt(form.vendedor_id) });
+      await api.post('/liquidaciones/generar-emergencia', { vendedor_id: parseInt(form.vendedor_id) }, { progressLabel: 'Generando liquidación...' });
       alert('Liquidación de urgencia generada con éxito.');
       setModalOpen(false);
       load(1);
@@ -129,7 +130,7 @@ export default function LiquidacionesPage() {
     if (!payoutLiq) return;
     setPayoutSubmitting(true);
     try {
-      await api.patch(`/liquidaciones/${payoutLiq.id}/pagar`);
+      await api.patch(`/liquidaciones/${payoutLiq.id}/pagar`, null, { progressLabel: 'Registrando pago...' });
       setPayoutModalOpen(false);
       load(pagination.currentPage);
     } catch (err: unknown) {
@@ -145,7 +146,7 @@ export default function LiquidacionesPage() {
     setDiaLiquidacion(val);
     setSavingSettings(true);
     try {
-      await api.put('/configuraciones', { clave: 'dia_liquidacion_semanal', valor: val });
+      await api.put('/configuraciones', { clave: 'dia_liquidacion_semanal', valor: val }, { progressLabel: 'Guardando configuración...' });
     } catch (err) {
       console.error(err);
       alert('Error al guardar configuración.');
@@ -311,11 +312,7 @@ export default function LiquidacionesPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-text-muted">
-                  Cargando liquidaciones...
-                </td>
-              </tr>
+              <TableLoading colSpan={9} label="Cargando liquidaciones..." />
             ) : liquidaciones.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-4 py-12 text-center text-text-muted">

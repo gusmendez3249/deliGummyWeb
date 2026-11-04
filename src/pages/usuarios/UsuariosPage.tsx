@@ -7,6 +7,7 @@ import ImageCapture from '../../components/ui/ImageCapture';
 import { useAuth } from '../../contexts/AuthContext';
 import { handleDecimalKeyDown } from '../../utils/keyboard';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
+import TableLoading from '../../components/ui/TableLoading';
 
 function SafeAvatar({ src, fallbackText }: { src: string | null; fallbackText: string }) {
   const [error, setError] = useState(false);
@@ -133,9 +134,9 @@ export default function UsuariosPage() {
       });
       if (imageFile) fd.append('imagen', imageFile);
       if (editing) {
-        await api.post(`/users/${editing.id}/update`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        await api.post(`/users/${editing.id}/update`, fd, { headers: { 'Content-Type': 'multipart/form-data' }, progressLabel: 'Actualizando usuario...' });
       } else {
-        await api.post('/users', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        await api.post('/users', fd, { headers: { 'Content-Type': 'multipart/form-data' }, progressLabel: 'Guardando usuario...' });
       }
       setModalOpen(false);
       load();
@@ -156,7 +157,7 @@ export default function UsuariosPage() {
   const handleDelete = async (u: User) => {
     if (!confirm(`¿Eliminar "${u.name}"?`)) return;
     try {
-      await api.delete(`/users/${u.id}`);
+      await api.delete(`/users/${u.id}`, { progressLabel: 'Eliminando usuario...' });
       load();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
@@ -275,11 +276,7 @@ export default function UsuariosPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-3">
-                  <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                </td>
-              </tr>
+              <TableLoading colSpan={7} label="Cargando usuarios..." />
             ) : paginatedUsers.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center text-text-muted">

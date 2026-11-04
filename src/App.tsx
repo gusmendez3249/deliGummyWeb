@@ -5,6 +5,7 @@ import { AlertProvider } from './contexts/AlertContext';
 import MainLayout from './components/layout/MainLayout';
 import TopProgressBar, { RouteLoadingIndicator } from './components/ui/TopProgressBar';
 import PageLoader from './components/ui/PageLoader';
+import TaskProgressToast from './components/ui/TaskProgressToast';
 import LoginPage from './pages/auth/LoginPage';
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
 const ProductosPage = lazy(() => import('./pages/productos/ProductosPage'));
@@ -92,6 +93,7 @@ function App() {
     <AuthProvider>
       <AlertProvider>
         <TopProgressBar />
+        <TaskProgressToast />
         <Router>
           <AppRoutes />
         </Router>

@@ -5,6 +5,8 @@ import type { Producto, VentaDirecta } from '../../types';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { handleIntegerKeyDown } from '../../utils/keyboard';
 import Modal from '../../components/ui/Modal';
+import { SectionLoading } from '../../components/ui/TableLoading';
+import TableLoading from '../../components/ui/TableLoading';
 
 function SafeImage({ src, fallbackIcon }: { src: string | null; fallbackIcon: React.ReactNode }) {
   const [error, setError] = useState(false);
@@ -160,7 +162,7 @@ export default function VentasDirectasPage() {
           precio_venta: item.precio_venta
         }))
       };
-      await api.post('/ventas-directas', payload);
+      await api.post('/ventas-directas', payload, { progressLabel: 'Registrando venta...' });
       alert('Venta realizada con éxito.');
       setCart([]);
       setNota('');
@@ -175,7 +177,7 @@ export default function VentasDirectasPage() {
 
   const viewDetails = async (venta: VentaDirecta) => {
     try {
-      const r = await api.get(`/ventas-directas/${venta.id}`);
+      const r = await api.get(`/ventas-directas/${venta.id}`, { progressLabel: 'Cargando detalle de la venta...' });
       setSelectedVenta(r.data);
       setModalOpen(true);
     } catch (e) {
@@ -260,9 +262,7 @@ export default function VentasDirectasPage() {
                 </div>
               </div>
               {loading ? (
-                <div className="h-32 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                </div>
+                <SectionLoading label="Cargando productos..." />
               ) : filteredProducts.length === 0 ? (
                 <p className="text-sm text-text-muted">No se encontraron productos.</p>
               ) : (
@@ -470,11 +470,7 @@ export default function VentasDirectasPage() {
               </thead>
               <tbody>
                 {historialLoading ? (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-3">
-                      <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                    </td>
-                  </tr>
+                  <TableLoading colSpan={6} label="Cargando historial de ventas..." />
                 ) : ventas.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-12 text-center text-text-muted">

@@ -6,6 +6,7 @@ import Modal from '../../components/ui/Modal';
 import { tipoPagoLabel, periodoPagoLabel, formatCurrency } from '../../utils/formatters';
 import { handleDecimalKeyDown } from '../../utils/keyboard';
 import ClearFiltersButton from '../../components/ui/ClearFiltersButton';
+import TableLoading from '../../components/ui/TableLoading';
 
 export default function VendedoresPage() {
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
@@ -92,8 +93,8 @@ export default function VendedoresPage() {
         comision_monto_fijo: parseFloat(form.comision_monto_fijo) || 0,
         usuario_id: parseInt(form.usuario_id),
       };
-      if (editing) await api.put(`/vendedores/${editing.id}`, data);
-      else await api.post('/vendedores', data);
+      if (editing) await api.put(`/vendedores/${editing.id}`, data, { progressLabel: 'Actualizando vendedor...' });
+      else await api.post('/vendedores', data, { progressLabel: 'Guardando vendedor...' });
       setModalOpen(false);
       load();
     } catch (err: unknown) {
@@ -113,7 +114,7 @@ export default function VendedoresPage() {
   const handleDelete = async (v: Vendedor) => {
     if (!confirm(`¿Eliminar vendedor "${v.usuario?.name}"?`)) return;
     try {
-      await api.delete(`/vendedores/${v.id}`);
+      await api.delete(`/vendedores/${v.id}`, { progressLabel: 'Eliminando vendedor...' });
       load();
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } } };
@@ -217,11 +218,7 @@ export default function VendedoresPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-3">
-                  <div className="h-4 bg-gray-100 rounded animate-pulse" />
-                </td>
-              </tr>
+              <TableLoading colSpan={7} label="Cargando vendedores..." />
             ) : paginatedVendedores.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
